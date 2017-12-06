@@ -176,12 +176,18 @@ var generateSwaggerConfig = function (entries) {
     return config;
 };
 exports.parse = function (pathGlobal, outFilepath) {
-    return new Promise(function (resolve) {
+    if (outFilepath === void 0) { outFilepath = ''; }
+    return new Promise(function (resolve, reject) {
         parseFiles(pathGlobal)
             .then(function (entries) {
             var config = generateSwaggerConfig(entries);
-            fs.writeFileSync(outFilepath, JSON.stringify(config, null, 4));
-            resolve(entries);
+            if (!outFilepath)
+                return resolve(config);
+            fs.writeFile(outFilepath, JSON.stringify(config, null, 4), function (err) {
+                if (err)
+                    return reject(err);
+                resolve(config);
+            });
         })["catch"](function (err) {
             console.error('Error!', err);
         });

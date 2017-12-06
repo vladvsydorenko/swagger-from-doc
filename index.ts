@@ -75,7 +75,7 @@ const createParams = (paramTags): ApiParam[] => {
     return paramTags.map(({ name, type, optional, description: originalDescription }): ApiParam => {
         let place = 'path';
         let description = originalDescription;
-        
+
         const mathched = originalDescription.match(paramPlaceRegex);
         if (mathched) {
             place = mathched[0].replace(/[\s#]/, '');
@@ -129,7 +129,7 @@ const parseFiles = (pathGlob): Promise<{[id: string]: ApiEntry}> => {
                                 const params = createParams(findTags('param', tags));
                                 const formats = createFormats(findTags('type', tags));
                                 const responses = createResponses(findTags('return', tags));
-            
+
                                 if (methodTag) {
                                     entry.methods.push({
                                         method: methodTag.name,
@@ -147,7 +147,7 @@ const parseFiles = (pathGlob): Promise<{[id: string]: ApiEntry}> => {
                                     entry.formats = formats;
                                 }
                             });
-            
+
                         resolve(entries);
                     });
                 });
@@ -205,7 +205,7 @@ const generateSwaggerConfig = (entries: {[id: string]: ApiEntry}) => {
         paths[path] = methods.reduce(
             (methods, {method, formats, description, summary, params, responses}) => {
                 const format = formats.length > 0 ? formats : entryFormats;
-                
+
                 methods[method] = {
                     tags: [tag],
                     summary,
@@ -221,7 +221,7 @@ const generateSwaggerConfig = (entries: {[id: string]: ApiEntry}) => {
                         return result;
                     }, {})
                 };
-                
+
                 return methods;
 
             },
@@ -233,13 +233,17 @@ const generateSwaggerConfig = (entries: {[id: string]: ApiEntry}) => {
     return config;
 };
 
-export const parse = (pathGlobal, outFilepath) => {
-    return new Promise((resolve) => {
+export const parse = (pathGlobal, outFilepath = '') => {
+    return new Promise((resolve, reject) => {
         parseFiles(pathGlobal)
             .then((entries) => {
                 const config = generateSwaggerConfig(entries);
-                fs.writeFileSync(outFilepath, JSON.stringify(config, null, 4));
-                resolve(entries);
+                if (!outFilepath) return resolve(config);
+
+                fs.writeFile(outFilepath, JSON.stringify(config, null, 4), (err) => {
+                    if (err) return reject(err);
+                    resolve(config);
+                });
             })
             .catch((err) => {
                 console.error('Error!', err);
